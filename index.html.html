@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Ricettario per la Patatina</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+  body {
+    margin: 0; padding: 0; 
+    font-family: 'Press Start 2P', cursive; color: #000; overflow-x: hidden;
+    /* Nuovo sfondo a scacchi pixelati (Giallo su Giallo) */
+    background-color: #FFCC00;
+    background-image: 
+      linear-gradient(45deg, #F3C200 25%, transparent 25%, transparent 75%, #F3C200 75%, #F3C200),
+      linear-gradient(45deg, #F3C200 25%, transparent 25%, transparent 75%, #F3C200 75%, #F3C200);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+  }
+
+  body::before {
+    content: " "; display: block; position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
+    background-size: 100% 4px; z-index: 999; pointer-events: none; 
+  }
+
+  .view {
+    display: none; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 20px; box-sizing: border-box;
+  }
+  .view.active { display: flex; }
+
+  /* HOME */
+  .title-huge { font-size: 35px; text-align: center; margin-top: 25vh; margin-bottom: 2px; line-height: 1.5; }
+  .title-medium { font-size: 15px; text-align: center; margin-top: 2vh; margin-bottom: 20px; line-height: 1.5; }
+  .blink { 
+    animation: blinker 1s cubic-bezier(1,0,0,1) infinite; cursor: pointer; 
+    text-align: center; font-size: 20px; color: #d00; text-shadow: 2px 2px 0px #000;
+  }
+  @keyframes blinker { 50% { opacity: 0; } }
+
+  /* BOTTONI */
+  .btn {
+    background: #000; color: #FFF; padding: 15px; border: 4px solid #FFF;
+    box-shadow: 4px 4px 0px #000; font-family: 'Press Start 2P', cursive; font-size: 12px;
+    cursor: pointer; text-transform: uppercase; text-align: left;
+    width: 100%; max-width: 350px; overflow: hidden; white-space: nowrap; 
+    position: relative; margin-bottom: 15px; display: block; line-height: 1.4;
+  }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+  
+  .btn-nav {
+    background: transparent; color: #000; border: 4px solid #000; 
+    padding: 10px; margin-top: 20px; font-size: 10px; box-shadow: 2px 2px 0px #000;
+    width: auto; align-self: center;
+  }
+
+  .btn-text { display: inline-block; padding-left: 5px; }
+  .btn.marquee .btn-text {
+    animation: marquee 5s linear infinite; padding-left: 100%;
+  }
+  @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-150%); } }
+
+  /* INDICE E RICETTA */
+  .index-title { font-size: 24px; margin-bottom: 40px; margin-top: 20px;}
+  .recipe-list { width: 100%; max-width: 350px; display: flex; flex-direction: column; }
+  
+  .recipe-header { width: 100%; max-width: 350px; display: flex; justify-content: flex-start; margin-bottom: 20px;}
+  .recipe-image { width: 100%; max-width: 350px; border: 4px solid #000; box-shadow: 4px 4px 0px #000; margin-bottom: 20px; image-rendering: pixelated; }
+  .recipe-title { font-size: 20px; text-align: center; margin-bottom: 15px; line-height: 1.4; width: 100%; max-width: 350px;}
+  .meta { display: flex; justify-content: space-between; width: 100%; max-width: 350px; font-size: 11px; margin-bottom: 30px;}
+  
+  .section-title { font-size: 12px; margin: 20px 0 10px 0; width: 100%; max-width: 350px; text-align: left; border-bottom: 4px solid #000; padding-bottom: 5px;}
+  
+  .text-content { font-family: 'VT323', monospace; font-size: 22px; width: 100%; max-width: 350px; line-height: 1.2; }
+  .ingredient-item { display: flex; justify-content: space-between; border-bottom: 2px dotted #000; margin-bottom: 8px;}
+  .step-item { margin-bottom: 15px; text-align: justify;}
+  .step-bold { font-weight: bold; font-family: 'Press Start 2P', cursive; font-size: 10px; display: block; margin-bottom: 5px; margin-top: 15px;}
+  .step-image { 
+    width: 75%; 
+    display: block;            /* Trasforma l'immagine in un blocco */
+    margin-left: auto;         /* Bilancia lo spazio a sinistra... */
+    margin-right: auto;        /* ...e lo spazio a destra, centrandola! */
+    border: 3px solid #000; 
+    box-shadow: 2px 2px 0px #000; 
+    margin-top: 15px; 
+    margin-bottom: 5px; 
+    box-sizing: border-box; 
+  }
+  .step-note {
+    background-color: #FF4444; /* Colore rosso acceso retro */
+    color: #FFFFFF;            /* Testo bianco per risaltare */
+    border: 3px solid #000;    /* Bordo nero spesso */
+    box-shadow: 2px 2px 0px #000; /* Ombra 8-bit */
+    padding: 12px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-size: 0.85em;         /* Testo leggermente più piccolo */
+    line-height: 1.5;
+  }
+
+  .note-title {
+    color: #FFCC00;            /* Giallo per la scritta "NOTA BENE" */
+    display: block;
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 0px #000;
+  }
+
+  /* STILE PER I CONSIGLI/ALTERNATIVE (BLU) */
+  .step-tip {
+    background-color: #2266CC; /* Blu intenso stile RPG */
+    color: #FFFFFF;            /* Testo bianco */
+    border: 3px solid #000;
+    box-shadow: 2px 2px 0px #000;
+    padding: 12px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+
+  .tip-title {
+    color: #66FFFF;            /* Un azzurro ciano luminoso per il titolo */
+    display: block;
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 0px #000;
+    font-weight: bold;
+  }
+
+  .splash-images {
+    display: flex;             /* Le allinea in orizzontale */
+    justify-content: center;   /* Le centra nello schermo */
+    gap: 15px;                 /* Spazio tra un'immagine e l'altra */
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .splash-images img {
+    width: 236px;               /* Modifica questo valore per farle più grandi o più piccole */
+    height: 100px;
+    border: 2px solid #000;    /* Cornice nera stile retro (opzionale) */
+    box-shadow: 2px 2px 0px #000;
+  }
+
+  /* STILE DEL TIMER 8-BIT */
+  .timer-box {
+    background-color: #000;
+    color: #FFF;
+    border: 3px solid #FFF;
+    box-shadow: 4px 4px 0px #000;
+    padding: 15px;
+    text-align: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 350px;
+    box-sizing: border-box;
+    cursor: pointer;
+    line-height: 1.5;
+  }
+  .timer-box:active {
+    transform: translate(2px, 2px); 
+    box-shadow: 2px 2px 0px #000;
+  }
+
+  /* --- IL MONDO DELLE TENEBRE (DARK MODE) --- */
+  body.dark-mode {
+    background-color: #1a1a2e; /* Blu notte molto scuro */
+    background-image: 
+      linear-gradient(45deg, #161626 25%, transparent 25%, transparent 75%, #161626 75%, #161626),
+      linear-gradient(45deg, #161626 25%, transparent 25%, transparent 75%, #161626 75%, #161626);
+    color: #e0e0e0; /* Testo grigio chiaro/bianco */
+  }
+
+  /* Modifiche ai bordi e alle ombre nella dark mode */
+  body.dark-mode .btn {
+    background: #e0e0e0; color: #000; border-color: #e0e0e0; box-shadow: 4px 4px 0px #0f0f1c;
+  }
+  body.dark-mode .btn:active { box-shadow: 2px 2px 0px #0f0f1c; }
+  
+  body.dark-mode .btn-nav {
+    background: transparent; color: #e0e0e0; border-color: #e0e0e0; box-shadow: 2px 2px 0px #0f0f1c;
+  }
+
+  body.dark-mode .recipe-image, 
+  body.dark-mode .step-image,
+  body.dark-mode .splash-images img,
+  body.dark-mode .step-note,
+  body.dark-mode .step-tip {
+    border-color: #e0e0e0; box-shadow: 4px 4px 0px #0f0f1c;
+  }
+
+  body.dark-mode .section-title { border-bottom: 4px solid #e0e0e0; }
+  body.dark-mode .ingredient-item { border-bottom: 2px dotted #e0e0e0; }
+  body.dark-mode .timer-box { border-color: #e0e0e0; box-shadow: 4px 4px 0px #0f0f1c; }
+
+</style>
+</head>
+<body>
+
+  <div id="view-home" class="view active">
+    <button class="btn btn-nav" style="position: absolute; top: 15px; right: 15px; margin-top: 0; padding: 10px; font-size: 14px;" onclick="toggleDarkMode()">🌙</button>
+    <div class="title-huge">RICETTARIO</div>
+    <div class="title-medium">UNA GUIDA PER PATATINE SU COME NON MORIRE DI FAME</div>
+    <div class="splash-images">
+      <img src="icona2.png" alt="Icona 2"></div>
+    <div class="blink" onclick="nav('view-index')">PRESS TO<br><br>COOK</div>
+  </div>
+
+  <div id="view-index" class="view">
+    <div class="index-title">INDICE</div>
+    <div class="recipe-list">
+      <button class="btn" onclick="nav('view-riso-vapore')"><span class="btn-text">1.Riso al vapore 🍚</span></button>
+      <button class="btn" onclick="nav('view-pollo-curry')"><span class="btn-text">2.Pollo al curry 🍛</span></button>
+      <button class="btn" onclick="nav('view-spezzatino-umido')"><span class="btn-text">3.Spezzatino in umido🍲</span></button>
+      <button class="btn" onclick="nav('view-ragu-bolognese')"><span class="btn-text">4.Ragu' alla bolognese 🍝</span></button>
+      <button class="btn" onclick="nav('view-pollo-forno')"><span class="btn-text">5.Sovraccosce al forno 🍗</span></button>
+      <button class="btn" onclick="nav('view-risotto')"><span class="btn-text">6.Risotto 🥘</span></button>
+    </div>
+    <button class="btn" style="background-color: #2266CC; border-color: #66FFFF;" onclick="randomEncounter()">
+        <span class="btn-text">🎲 RICETTA CASUALE</span>
+      </button>
+    <button class="btn btn-nav" onclick="nav('view-home')">HOME</button>
+  </div>
+
+
+  <div id="view-riso-vapore" class="view">
+    <div class="recipe-header">
+      <button class="btn btn-nav" style="margin-top:0;" onclick="nav('view-index')">&lt; RICETTE</button>
+    </div>
+    
+    <img src="riso-al-vapore.png" alt="Riso al Vapore" class="recipe-image">
+    
+    <div class="recipe-title">Riso al Vapore</div>
+    <div class="meta">
+      <span>⏳ 15 MINUTI</span>
+      <span>⭐ DIFFICOLTA'</span>
+    </div>
+    
+    <div class="section-title">INGREDIENTI</div>
+    <div class="text-content">
+      <div class="ingredient-item"><span>Riso basmati</span><span>1 Parte</span></div>
+      <div class="ingredient-item"><span>Acqua</span><span>1.2 Parti</span></div>
+      <div class="ingredient-item"><span>Sale fino</span><span>1/2 cucchiaino</span></div>
+      <div class="ingredient-item"><span>Cumino (opzionale)</span><span>1/2 cucchiaino</span></div>
+    </div>
+
+    <div class="section-title">PROCEDIMENTO</div>
+    <div class="text-content">
+      <div class="step-item"><span class="step-bold">1. LAVA IL RISO:</span> Metti il riso in una ciotola (o direttamente il pentolino in cui lo cuocerai) e coprilo con acqua fredda. Agita il tutto (delicatamente) con la mano per togliere l'amido in eccesso dal riso, poi scarta l'acqua torbida. Ripeti il passaggio finché l'acqua risulta pulita (fai almeno tre risciacqui).</div>
+      <img src="1step1-lavaggio.png" class="step-image">
+      <div class="step-item"><span class="step-bold">2. CONDISCI IL RISO:</span> Scola il riso dall'acqua di lavaggio e mettilo in un pentolino. Unisci l'acqua pulita, il sale e il cumino, e mescola delicatamente per far sciogliere e distribuire il sale.</div>
+      <img src="1step2-condimento.png" class="step-image">
+      <div class="step-item"><span class="step-bold">3. CUOCI IL RISO:</span> Metti il pentolino sul fuoco a fiamma media. Quando l'acqua inizia a bollire (vedrai delle bolle bianche formarsi) copri con un coperchio molto aderente (non vogliamo che il vapore esca) e abbassa al minimo la fiamma. Lascia cuocere per 5 minuti.</div>
+      <div class="step-tip"><span class="tip-title">💡 TIPS & TRICKS:</span>I tempi di cottura hanno molte variabili, come la quantità di riso, il tipo di pentolino, la distribuzione dei chicchi in cottura etc... Cerca volta per volta di aggiustare il tiro, tenendo a mente come è venuto il riso con una particolare tempistica. </div>
+      <img src="1step3-cottura.png" class="step-image">
+      <div class="step-item"><span class="step-bold">4. LASCIA RIPOSARE:</span> Passati i 5 minuti togli il riso dal fuoco senza scoprirlo, e lascialo riposare coperto per altri 5 minuti.</div>
+      <img src="1step4-riposo.png"class="step-image">
+      <div class="step-item"><span class="step-bold">5. GUSTA IL RISO:</span> Al termine dei cinque minuti alza il coperchio (facendo attenzione al vapore che uscirà) e mischia delicatamente il riso con una forchetta per separare i chicchi e liberare tutto il vapore trattenuto dal riso (in modo che il fondo non continui a cuocere). Puoi servire il riso e gustarlo come accompagnamento per qualsiasi piatto.</div>
+      <img src="1step5-gustaggio.png" class="step-image">
+    </div>
+  </div>
+
+
+ <div id="view-pollo-curry" class="view">
+    <div class="recipe-header">
+      <button class="btn btn-nav" style="margin-top:0;" onclick="nav('view-index')">&lt; RICETTE</button>
+    </div>
+    
+    <img src="pollo-al-curry.png" alt="Pollo al Curry" class="recipe-image">
+    
+    <div class="recipe-title">Pollo al Curry</div>
+    <div class="meta">
+      <span>⏳ 25-30 MINUTI</span>
+      <span>⭐⭐⭐ DIFFICOLTA'</span>
+    </div>
+    
+    <div class="section-title">INGREDIENTI</div>
+    <div class="text-content">
+      <div class="ingredient-item"><span>Pollo (petto, fettine o spezzatino)</span><span>1 pacco</span></div>
+      <div class="ingredient-item"><span>Yogurt bianco</span><span>1 vasetto</span></div>
+      <div class="ingredient-item"><span>Olio d'oliva</span><span>1 cucchiaio</span></div>
+      <div class="ingredient-item"><span>Succo di limone</span><span>1/2 cucchiaio</span></div>
+      <div class="ingredient-item"><span>Salsa di soia</span><span>1 cucchiaino</span></div>
+      <div class="ingredient-item"><span>Curry in polvere</span><span>1 cucchiaino</span></div>
+      <div class="ingredient-item"><span>Spezie</span><span>1/2 cucchiaino (per spezia)</span></div>
+      <div class="ingredient-item"><span>1 Cipolla</span><span> </span></div>
+      <div class="ingredient-item"><span>2 Spicchi d'aglio</span><span> </span></div>
+      
+    </div>
+
+    <div class="section-title">PROCEDIMENTO</div>
+    <div class="text-content">
+      <div class="step-item"><span class="step-bold">1. SISTEMA IL POLLO:</span> Inizia sistemando il pollo: se hai un petto intero o delle fettine sottili, taglialo in bocconi della stessa misura (comprando direttamente lo spezzatino puoi naturalmente saltare questo passaggio.</div>
+      <img src="2step1.png" class="step-image">
+      <div class="step-item"><span class="step-bold">2. MARINA IL POLLO:</span> Riponi il pollo in una ciotola e unisci olio, succo di limone, salsa di soia, un pizzico di sale e di pepe e le spezie: oltre al curry puoi usare le tue spezie preferite, come paprika (dolce, forte, affumicata), cumino, peperoncino, coriandolo in polvere, zenzero in polvere, erbe aromatiche etc... Lascia marinare in frigo il pollo per almeno mezz'ora (più marina, meglio è).</div>
+      <img src="2step2.png" class="step-image">
+      <div class="step-item"><span class="step-bold">3. PREPARA AGLIO E CIPOLLA:</span> Pulisci e taglia la cipolla a metà e poi a strisce fine. Pulisci l'aglio, dividilo a metà e togli l'anima (il cuore dell'aglio che lo rende meno digeribile). Il meglio sarebbe tritarlo per avere il massimo del sapore, ma se non vuoi uccidere nessuno con il tuo alito può bastare tenerlo intero.</div>
+      <img src="2step3.png" class="step-image">
+      <div class="step-item"><span class="step-bold">4. AI FORNELLI!:</span> Ungi una padella sufficientemente capiente con il cucchiaio di olio e rosola a fuoco dolce l'aglio e le cipolle: queste devono diventare traslucide senza bruciare. Dopo circa tre minuti rimuovi l'aglio (se lasciato intero), alza la fiamma e versa il pollo in padella con tutta la marinatura. Mescola in modo che da incorporare le cipolle e lascia cuocere a fuoco medio girando di tanto in tanto. </div>
+      <img src="2step4.png" class="step-image">
+      <div class="step-tip"><span class="tip-title">💡 TIPS & TRICKS:</span>Il tempo di cottura è estremamente importante (non vogliamo né la salmonella, né una gomma da masticare sotto i denti) e varia da taglio a taglio: le fettine sottili saranno molto rapide a cuocere, mentre lo spezzatino richiederà più tempo. Il trucco è sentire con il mestolo la consistenza della carne in cottura e, quando si sospetta che il pollo sia pronto, cercare il pezzo più grande e verificarne lo stato di cottura tagliandolo a metà: ricorda che il pollo è cotto quando il colore rosato è sparito del tutto e la carne risulta bianca.</div>
+      <div class="step-item"><span class="step-bold">5. GUSTA IL POLLO:</span> A cottura ultimata servi il pollo come preferisci, accompagnato dal riso al vapore ed eventualmente da delle verdure. </div>
+      <img src="2step5.png" class="step-image"> 
+    </div>
+  </div>
+
+  
+  <div id="view-spezzatino-umido" class="view">
+    <div class="recipe-header">
+      <button class="btn btn-nav" style="margin-top:0;" onclick="nav('view-index')">&lt; RICETTE</button>
+    </div>
+    
+    <img src="spezzatino-in-umido.png" alt="Spezzatino in Umido" class="recipe-image">
+    
+    <div class="recipe-title">Spezzatino in Umido</div>
+    <div class="meta">
+      <span>⏳ 3 ORE</span>
+      <span>⭐⭐ DIFFICOLTA'</span>
+    </div>
+    
+    <div class="section-title">INGREDIENTI</div>
+    <div class="text-content">
+      <div class="ingredient-item"><span>Spezzatino di vitello</span><span>1 pacco</span></div>
+      <div class="ingredient-item"><span>Olio d'oliva</span><span>1 cucchiaio</span></div>
+      <div class="ingredient-item"><span>1 Spicchio d'aglio</span><span> </span></div>
+      <div class="ingredient-item"><span>1 Cipolla</span><span> </span></div>
+      <div class="ingredient-item"><span>Carote</span><span> q.b. </span></div>
+      <div class="ingredient-item"><span>Patate</span><span> q.b. </span></div>
+      <div class="ingredient-item"><span>Polpa di pomodoro</span><span>1 barattolo</span></div>
+      <div class="ingredient-item"><span>Vino (bianco o rosso)</span><span>1 bicchiere</span></div>
+      <div class="ingredient-item"><span>Erbe aromatiche</span><span>1 mazzetto</span></div>
+      
+    </div>
+
+    <div class="section-title">PROCEDIMENTO</div>
+    <div class="text-content">
+      <div class="step-item"><span class="step-bold">1. PREPARA GLI INGREDIENTI:</span> Pela le patate, le carote, la cipolla e l'aglio. Taglia in pezzi di circa 2 cm le patate, le carote e la cipolla. Assicurati inoltre che la carne sia circa a temperatura ambiente (o che almeno non sia a temperatura frigorifero). </div>
+      <img src="3step1.png" class="step-image">
+      <div class="step-item"><span class="step-bold">2. SIGILLA LA CARNE:</span> Versa l'olio in una pentola (o in una casseruola) sufficientemente capiente e lascialo scaldare a fiamma vivace. Dopo circa un minuto inserisci la carne nella pentola. </div>
+      <div class="step-note"><span class="note-title">⚠️ ATTENZIONE:</span> Nell'inserire la carne l'olio potrebbe schizzare e bruciarti, dunque inizia inserendo un solo pezzo e vedi come reagisce l'olio: se la carne sfrigola senza esplodere inserisci i restanti pezzi, mentre se noti che possa causare molti schizzi copri velocemente con un coperchio e sposta la pentola dal fuoco fino a che non abbia raggiunto nuovamente una temperatura gestibile.</div>
+      <div class="step-item"> Lascia rosolare i pezzi di vitello fino a che non cambiano tutti colore. Se la carne sembra attaccarsi al fondo e lascia delle note "bruciate" sul fondo della padella non ti preoccupare: è proprio quello che cerchiamo di ottenere e che sfrutteremo al prossimo passaggio. </div>
+      <img src="3step2.png" class="step-image">
+      <div class="step-item"><span class="step-bold">3. SFUMA CON IL VINO:</span> Sfuma versando lentamente il vino in pentola. </div>
+      <div class="step-tip"><span class="tip-title">💡 TIPS & TRICKS:</span> Oltre che a dare sapore l'alcol aiuta anche a deglassare il fondo della pentola. Ciò significa che con il vino tutto il colore lasciato sul fondo dalla carne viene grattato via facilmente: questo passaggio aggiunge sapore al piatto e definisce la differenza tra uno spezzatino fatto come si deve e uno spezzatino lessato! </div>
+      <div class="step-item"> Lascia cuocere fino a che tutto l'alcol non sarà evaporato (evitando di ubriacarti con i relativi fumi). </div>
+      <img src="3step3.png" class="step-image">
+      <div class="step-item"><span class="step-bold">4. UNISCI (PIANO PIANO) GLI ALTRI INGREDIENTI: </span> Unisci la cipolla, l'aglio e, dopo un paio di minuti, la polpa di pomodoro, assicurandoti di pulire bene il contenitore con dell'acqua (anche essa da versare in pentola).</div>
+      <img src="3step4.png" class="step-image">
+      <div class="step-item"><span class="step-bold">5. ABBI PAZIENZA:</span> Fai raggiungere allo spezzatino un leggerissimo bollore, poi copri con un coperchio e abbassa la fiamma quasi al minimo: deve rimanere a sobbollire coperto per almeno un'ora e mezza. </div>
+      <img src="3step5.png" class="step-image">
+      <div class="step-item"><span class="step-bold">6. AGGIUNGI LE VERDURE:</span> Passata l'ora e mezza aggiungi le patate e le carote, mescola assicurandoti che sia tutto sommerso dal pomodoro (in caso contrario aggiungi quanto basta di acqua) e lascia cuocere almeno un'altra ora a fuoco basso.</div>
+      <img src="3step6.png" class="step-image"> 
+      <div class="step-item"><span class="step-bold">7. GUSTA LO SPEZZATINO:</span> Conclusesi le minime due ore e mezza controlla che patate e carote si attraversino facilmente con una forchetta. Se le verdure sono cotte puoi gustarti il tuo spezzatino in umido, magari accompagnato da della polenta. </div>
+      <img src="3step7.png" class="step-image">
+    </div>
+  </div>
+
+
+  <div id="view-ragu-bolognese" class="view">
+    <div class="recipe-header">
+      <button class="btn btn-nav" style="margin-top:0;" onclick="nav('view-index')">&lt; RICETTE</button>
+    </div>
+    
+    <img src="ragu-bolognese.png" alt="Ragù alla bolognese" class="recipe-image">
+    
+    <div class="recipe-title">Ragù alla bolognese</div>
+    <div class="meta">
+      <span>⏳ 3,5 ORE</span>
+      <span>⭐⭐ DIFFICOLTA'</span>
+    </div>
+    
+    <div class="section-title">INGREDIENTI</div>
+    <div class="text-content">
+      <div class="ingredient-item"><span>Macinato di manzo</span><span>1 pacco</span></div>
+      <div class="ingredient-item"><span>Salsiccia (opzionale)</span><span>q.b.</span></div>
+      <div class="ingredient-item"><span>Olio d'oliva</span><span>1 cucchiaio</span></div>
+      <div class="ingredient-item"><span>1 Spicchio d'aglio</span><span> </span></div>
+      <div class="ingredient-item"><span>1 Cipolla</span><span> </span></div>
+      <div class="ingredient-item"><span>1 Carota</span><span> </span></div>
+      <div class="ingredient-item"><span>1 Costa di sedano</span><span> </span></div>
+      <div class="ingredient-item"><span>Polpa di pomodoro</span><span>1 barattolo</span></div>
+      <div class="ingredient-item"><span>Vino (bianco o rosso)</span><span>1 bicchiere</span></div>
+      <div class="ingredient-item"><span>Erbe aromatiche</span><span>1 mazzetto</span></div>
+      <div class="ingredient-item"><span>Sale e pepe</span><span>q.b.</span></div>
+      
+    </div>
+
+    <div class="section-title">PROCEDIMENTO</div>
+    <div class="text-content">
+      <div class="step-item"><span class="step-bold">1. PREPARA IL SOFFRITTO:</span> Pela le carote, la cipolla e l'aglio. Puoi passare cipolla, sedano e carote in un frullatore elettrico fino a ottenere una pappa, altrimenti puoi dadolare a mano il soffritto.</div>
+      <div class="step-tip"><span class="tip-title">💡 TIPS & TRICKS:</span> Tieni a mente che frullando le verdure queste non si sentiranno sotto i denti e bisognerà stare molto attenti a non bruciarle nelle fasi iniziali della preparazione. Se invece vuoi affrontare il taglio a mano procedi in questo modo: taglia per lungo le carote a fette di mezzo centimetro, poi le fette in bastoncini e i bastoncini in cubetti. Stessa cosa per il sedano: bastoncini e poi cubetti. La cipolla invece tagliala a metà dividendo il disco basale, tagliala a fette ma lasciando integro il disco (cosicché la cipolla resti compatta). A questo punto taglia nell'altro verso e la cipolla risulterà a dadini. </div>
+      <img src="4step1.png" class="step-image">
+      <div class="step-item"><span class="step-bold">2. ROSOLA LA CARNE:</span> Versa l'olio in una pentola (o in una casseruola) sufficientemente capiente e lascialo scaldare a fiamma vivace. Dopo circa un minuto inserisci il macinato e la salsiccia in pezzetti (priva di budello) nella pentola. Lascia rosolare a fuoco vivace rompendo e separando i pezzi di carne con un cucchiaio da cucina. </div>
+      <div class="step-tip"><span class="tip-title">💡 TIPS & TRICKS:</span> Se la temperatura dell'olio non è sufficientemente alta o la pentola risulta troppo piena la carne può tirare fuori acqua e non rosolare correttamente. Inoltre se la carne si attacca al fondo non ti preoccupare, sta lì tutto il sapore! </div>
+      <div class="step-item"> Quando la carne ha cambiato colore ed è ben rosolata, toglila dalla pentola e mettila in un piatto. </div>
+      <img src="4step2.png" class="step-image">
+      <div class="step-item"><span class="step-bold">3. TUTTO IN PENTOLA:</span> Aggiungi se necessario un secondo cucchiaio di olio, versa il soffritto in pentola, sala e pepa e lascia andare girando spesso per non farlo bruciare. Dopo un paio di minuti rimetti in pentola la carne e, quando il tutto avrà ripreso la temperatura, sfuma con il vino. Mescola e gratta bene il fondo in modo da incorporare tutto il sapore che è rimasto attaccato alla pentola. </div>
+      <img src="4step3.png" class="step-image">
+      <div class="step-item"><span class="step-bold">4. AGGIUNGI IL POMODORO: </span> Quando il vino sarà completamente evaporato versa il pomodoro, assicurandoti di pulire bene il contenitore con dell'acqua (anche essa da versare in pentola). Aggiungi un altro pizzico di sale e le erbe aromatiche. Lascia raggiungere un leggerissimo bollore, poi abbassa la fiamma e copri con coperchio. </div>
+      <img src="4step4.png" class="step-image">
+      <div class="step-item"><span class="step-bold">5. ABBI PAZIENZA:</span> Il ragù ha da cuocere: più tempo passa sul fuoco, più gustoso diventa. Il mio consiglio è lasciarlo andare per almeno due ore e mezza, controllando di tanto in tanto che ci sia abbastanza liquido e che non stia bruciando sul fondo. Sopra le tre ore di lenta cottura è tutto di guadagnato! </div>
+      <img src="4step5.png" class="step-image">
+      <div class="step-item"><span class="step-bold">6. GUSTA IL RAGU':</span> Conclusesi le minime due ore e mezza puoi condire con il ragù un buon piatto di pasta o puoi gustare il ragù direttamente con del pane. </div>
+      <img src="4step6.png" class="step-image">
+    </div>
+  </div>
+
+
+  <div id="view-pollo-forno" class="view">
+    <div class="recipe-header">
+      <button class="btn btn-nav" style="margin-top:0;" onclick="nav('view-index')">&lt; RICETTE</button>
+    </div>
+    
+    <img src="pollo-forno.png" alt="Sovraccosce al forno" class="recipe-image">
+    
+    <div class="recipe-title">Sovraccosce al forno</div>
+    <div class="meta">
+      <span>⏳ 1 ORA</span>
+      <span>⭐⭐ DIFFICOLTA'</span>
+    </div>
+    
+    <div class="section-title">INGREDIENTI</div>
+    <div class="text-content">
+      <div class="ingredient-item"><span>Sovraccosce di pollo</span><span>1 pacco</span></div>
+      <div class="ingredient-item"><span>Patate</span><span>q.b.</span></div>
+      <div class="ingredient-item"><span>Olio d'oliva</span><span>2/3 cucchiai</span></div>
+      <div class="ingredient-item"><span>1 Spicchio d'aglio</span><span> </span></div>
+      <div class="ingredient-item"><span>Vino (bianco o rosso)</span><span>1 bicchiere</span></div>
+      <div class="ingredient-item"><span>Erbe aromatiche e/o spezie</span><span> </span></div>
+      <div class="ingredient-item"><span>Sale e pepe</span><span>q.b.</span></div>
+      
+    </div>
+
+    <div class="section-title">PROCEDIMENTO</div>
+    <div class="text-content">
+      <div class="step-item"><span class="step-bold">1. PREPARA LE PATATE:</span> Lava bene le patate (se preferisci pelale) e tagliale a cubetti di 2 cm. Sbuccia anche l'aglio. </div>
+      <img src="5step1.png" class="step-image">
+      <div class="step-item"><span class="step-bold">2. CONDISCI TUTTO:</span> Versa TUTTI gli ingredienti in una ciotola e dai una mescolata per condire per bene ogni pezzo di pollo e di patate. </div>
+      <img src="5step2.png" class="step-image">
+      <div class="step-item"><span class="step-bold">3. TUTTO IN FORNO:</span> Versa e distribuisci uniformemente in una teglia il contenuto della ciotola, liquidi compresi. Inforna a 180° con l'opzione ventilato e lascia cuocere per circa 45 minuti, mischiando ogni tanto le patate e girando il pollo a due terzi della cottura. Se noti che patate o pollo si stanno bruciando puoi aggiungere un paio di cucchiai d'acqua in teglia e girare. </div> 
+      <img src="5step3.png" class="step-image">
+      <div class="step-item"><span class="step-bold">4. GUSTA IL POLLO:</span> Assicurati che il pollo sia cotto (ricorda che deve essere bianco dentro) e che le patate si attraversino facilmente con la forchetta. Gusta il pollo con le patate ancora caldo. </div>
+      <img src="5step4.png" class="step-image">
+    </div>
+  </div>
+
+
+  <div id="view-risotto" class="view">
+    <div class="recipe-header">
+      <button class="btn btn-nav" style="margin-top:0;" onclick="nav('view-index')">&lt; RICETTE</button>
+    </div>
+    
+    <img src="risotto.png" alt="Risotto" class="recipe-image">
+    
+    <div class="recipe-title">Risotto</div>
+    <div class="meta">
+      <span>⏳ 25-30 MINUTI</span>
+      <span>⭐⭐⭐ DIFFICOLTA'</span>
+    </div>
+    
+    <div class="section-title">INGREDIENTI</div>
+    <div class="text-content">
+      <div class="ingredient-item"><span>Riso (Carnaroli o Arborio)</span><span>90 grammi</span></div>
+      <div class="ingredient-item"><span>Brodo vegetale</span><span>q.b.</span></div>
+      <div class="ingredient-item"><span>Condimento </span><span>q.b.</span></div>
+      <div class="ingredient-item"><span>Vino bianco</span><span>1 bicchiere</span></div>
+      <div class="ingredient-item"><span>Burro </span><span>1 cucchiaio</span></div>
+      <div class="ingredient-item"><span>Parmigiano grattuggiato </span><span>1 cucchiaio</span></div>
+    </div>
+
+    <div class="section-title">PROCEDIMENTO</div>
+    <div class="text-content">
+      <div class="step-item"><span class="step-bold">1. PREPARA IL BRODO:</span> Metti a bollire un pentolino di acqua e porta a bollore. Sciogli poi la giusta quantità di dado (è riportata sulla confezione) nell'acqua e abbassa il fuoco al minimo: deve rimanere molto caldo ma senza bollire, altrimenti finirà per restringersi. </div>
+      <img src="6step1.png" class="step-image">
+      <div class="step-item"><span class="step-bold">2. TOSTA IL RISO:</span> Versa il riso in un pentolino (la cui grandezza dovrebbe essere tale per cui i chicchi si distribuiscono su circa tre strati) e lascia scaldare a fuoco medio. Mescola di tanto in tanto in modo che il riso non bruci. Quando non riesci più a tenere i chicchi in mano per il calore puoi passare allo step successivo.</div>
+      <div class="step-tip"><span class="tip-title">💡 TIPS & TRICKS:</span> La scelta del riso è fondamentale per ogni preparazione. Per il risotto è ideale un riso con sufficente amido (per la cremina) e che tenga bene la cottura: non puoi sbagliare con un Carnaroli o con un Arborio. Per i contorni invece è ottimo un riso orientale a chicco allungato: scelte sicure sono il Basmati o il Jasmine. </div>
+      <img src="6step2.png" class="step-image">
+      <div class="step-item"><span class="step-bold">3. SFUMAGGIO E COTTURA:</span> Sfuma con il vino e poi, quando sarà evaporato tutto l'alcol, versa il primo mestolo di brodo. L'obiettivo è quello di tenere il riso sempre leggermente sommerso di liquido, di modo che si cuocia uniformemente. E' importante mescolare molto spesso per evitare di farlo attaccare al fondo: questo serve anche per tirare fuori l'amido affinché si formi la cremina. </div> 
+      <img src="6step3.png" class="step-image">
+      <div class="step-item"><span class="step-bold">4. PORTA A COTTURA IL RISO:</span> Continua a versare piano piano il brodo, tenendo sempre lo stesso livello di liquido nel pentolino. Dopo circa un quarto d'ora assaggia il riso fino a che non è pronto: deve essere al dente, né croccante, né troppo morbido. Lascia ridurre il liquido fino a che non è consono per un risotto. </div>
+      <div class="step-tip"><span class="tip-title">💡 TIPS & TRICKS:</span> La gestione del condimento può essere molto variabile in base all'ingrediente che si sceglie. Vediamo come approcciare alcuni di essi. Se vuoi fare un risotto alle verdure (consiglio zucchine o spinaci) taglia a pezzetti molto fini la verdura e lasciala cuocere insieme al riso: insaporirà il piatto fin da subito. La zucca invece necessita prima di essere sbollentata o arrostita in forno, poi frullata: aggiungila al riso a metà cottura e lasciala ancora andare con esso. Lo zafferano invece va sciolto in due dita di acqua o brodo caldo, poi versato nel riso come la zucca. </div>
+      <img src="6step4.png" class="step-image">
+      <div class="step-item"><span class="step-bold">5. MANTECA IL RISO:</span> Sposta il pentolino dal fuoco e aggiungi burro e parmigiano. Mescola vigorosamente per far sciogliere entrambi fino a che la crema non è liscia e omogenea. </div>
+      <img src="6step5.png" class="step-image">
+      <div class="step-item"><span class="step-bold">6. GUSTA IL RISO:</span> Servi il risotto in un piatto piano, distribuendolo uniformemente su tutta la superficie. Se ci sono ulteriori condimenti da aggiungere (come della salsiccia o del formaggio morbido) disponili sul piatto e poi gusta il tuo risotto. </div>
+      <img src="6step6.png" class="step-image">
+
+
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <script>
+    function nav(targetId) {
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      window.scrollTo(0,0);
+    }
+  </script>
+
+  <script>
+    function nav(targetId) {
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      document.getElementById(targetId).classList.add('active');
+      window.scrollTo(0,0);
+    }
+
+    /* --- INCONTRO CASUALE --- */
+    function randomEncounter() {
+      // Lista di tutti gli ID delle tue ricette
+      const recipes = [
+        'view-riso-vapore', 'view-pollo-curry', 'view-spezzatino-umido', 
+        'view-ragu-bolognese', 'view-pollo-forno', 'view-risotto', 
+      ];
+      // Ne pesca uno a caso come se tirasse un dado a 9 facce
+      const randomRecipe = recipes[Math.floor(Math.random() * recipes.length)];
+      // Ti teletrasporta lì
+      nav(randomRecipe);
+    }
+
+    /* --- ALLARME SONORO 8-BIT --- */
+    function playAlarm() {
+      // Crea un sintetizzatore audio nel browser
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return; 
+      const ctx = new AudioContext();
+      
+      // Funzione per creare una singola nota retro
+      function beep(freq, delay, duration) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square'; // "square" genera il classico suono a 8-bit!
+        osc.frequency.value = freq;
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        // Regola il volume (0.1 è per non assordare l'utente)
+        gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + delay + 0.05);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + delay + duration);
+        
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + duration);
+      }
+
+      // Suona una tipica "sveglia" arcade (tre note che salgono)
+      beep(600, 0.0, 0.2);
+      beep(800, 0.3, 0.2);
+      beep(1200, 0.6, 0.5);
+    }
+
+    /* --- TIMER INTEGRATO (CON SUONO) --- */
+    let timerInterval;
+    function startTimer(minutes, elementId) {
+      clearInterval(timerInterval); // Azzera timer precedenti
+      
+      // PER TESTARE IL SUONO SUBITO: cambia (minutes * 60) in (3) per un timer di 3 secondi!
+      let time = minutes * 60; 
+      const display = document.getElementById(elementId);
+      display.style.color = "#FFCC00"; 
+
+      timerInterval = setInterval(function () {
+        let m = Math.floor(time / 60);
+        let s = time % 60;
+        m = m < 10 ? "0" + m : m;
+        s = s < 10 ? "0" + s : s;
+        display.textContent = "⏳ " + m + ":" + s;
+
+        if (--time < 0) {
+          clearInterval(timerInterval);
+          display.textContent = "🔔 DING! PRONTO!";
+          display.style.color = "#FF4444"; 
+          
+          // FAI PARTIRE L'ALLARME!
+          playAlarm(); 
+        }
+      }, 1000);
+    }
+
+  /* --- INTERRUTTORE DARK MODE --- */
+    function toggleDarkMode() {
+      // Aggiunge o toglie la classe 'dark-mode' a tutto il corpo del sito
+      document.body.classList.toggle('dark-mode');
+    }
+
+  </script>
+
+</body>
+</html>
